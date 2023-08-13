@@ -1,6 +1,6 @@
 import {Router} from "express";
 import { formularioLogin, formularioRegistro,formularioForgetPassword, registrar,comprobar,
-resetPassword} from "../controllers/Usuario.controller.js";
+resetPassword,comprobarToken,nuevoPassword} from "../controllers/Usuario.controller.js";
 
 const router = Router();
 
@@ -14,6 +14,9 @@ router.get("/comprobar/:token",comprobar)
 router.get("/forget",formularioForgetPassword)
 router.post("/forget",resetPassword)
 
+//Almacena
+router.get("/forget/:token",comprobarToken) 
+router.post("/forget/:token",nuevoPassword)
 
 
 

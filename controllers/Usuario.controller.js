@@ -1,7 +1,7 @@
 import { check, validationResult } from "express-validator"
 import Usuario from "../models/Usuario.js"
 import { generarId } from "../helpers/tokens.js"
-import { emailRegistro } from "../helpers/emails.js"
+import { emailRegistro, emailForgetPassword } from "../helpers/emails.js"
 
 export const formularioLogin = (req, res) => {
     res.render("auth/login", {
@@ -124,7 +124,6 @@ export const resetPassword = async (req, res) => {
             
         })
     }
-
     //Buscar al usuario
     const {email}=req.body
 
@@ -142,13 +141,40 @@ export const resetPassword = async (req, res) => {
         await usuario.save();
 
         //Enviar email
+        emailForgetPassword({
+            nombre:usuario.nombre,
+            email:usuario.email,
+            token:usuario.token
+        })
+
+        res.render("templates/mensaje", {
+            pagina: "Restablece tu contraseña",
+            mensaje: "Hemos enviado un email con las instrucciones"
+        })
+        
         
 
         //Renderizar un mensaje
-
-
+}
+export const comprobarToken =async(req,res) =>{
+        const{token}=req.params;
+        const usuario = await Usuario.findOne({where:{token}})
+        if(!usuario){
+            return res.render("auth/confirmar-cuenta", {
+                pagina: "Error del token",
+                mensaje: "Hubo un error al validar tu informacion",
+                error: true
+            })
+        }
+        //Mostrar un formulario para modificar password
+        res.render("auth/reset-password",{
+            pagina:"Restablece tu constraseña",
+            csrfToken:req.csrfToken(),
+            
+        })
 
 }
+export const nuevoPassword=async(req,res)=>{
+    console.log("Esta es la funcion de nuevo password") 
 
-
-
+} 

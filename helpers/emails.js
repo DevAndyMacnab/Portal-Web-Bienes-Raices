@@ -42,12 +42,13 @@ export const emailForgetPassword = async (datos) => {
     await transport.sendMail({
         from:"Bienes Raices.com",
         to:email,
-        subject:"Confirma tu cuenta en BienesRaice.com",
-        text:"Confirma tu cuenta en BienesRaice.com",
+        subject:"Restablece tu password",
+        text:"Restablece tu password",
         html:`
-        <p>Hola ${nombre}, comprueba tu cuenta en bienesRaices.com</p>
-        <p>Tu cuenta ya esta lista, solo debes confirmarla en el siguiente enlace:
-        <a href="${process.env.BACKEND_URL}:${process.env.PORT ?? 3000}/api/comprobar/${token}">Confirmar cuenta</a></p>
+        <p>Hola ${nombre}, has solicitado restablecer tu password en BienesRaices.com </p>
+        <p>Sigue el siguiente enlace para restaurarla</p>
+        <a href="${process.env.BACKEND_URL}:${process.env.PORT ?? 3000}/api/forget/${token}">Restablecer Contraseña</a></p>
+
         <p>Si tu no creaste esta cuenta, puedes ignorar el mensaje</p>`
         
     })
