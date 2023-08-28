@@ -1,11 +1,14 @@
 import { check, validationResult } from "express-validator"
 import Usuario from "../models/Usuario.js"
-import { generarId } from "../helpers/tokens.js"
+import { generarId, generarJwt } from "../helpers/tokens.js"
 import { emailRegistro, emailForgetPassword } from "../helpers/emails.js"
+import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken"
 
 export const formularioLogin = (req, res) => {
     res.render("auth/login", {
-        pagina: "Iniciar Sesión"
+        pagina: "Iniciar Sesión",
+        csrfToken:req.csrfToken()
 
     })
 }
@@ -168,13 +171,95 @@ export const comprobarToken =async(req,res) =>{
         }
         //Mostrar un formulario para modificar password
         res.render("auth/reset-password",{
-            pagina:"Restablece tu constraseña",
+            pagina:"Reestablece tu constraseña",
             csrfToken:req.csrfToken(),
             
         })
 
 }
 export const nuevoPassword=async(req,res)=>{
-    console.log("Esta es la funcion de nuevo password") 
+    await check("password").isLength({ min: 6 }).withMessage("Su contraseña es demasiado débil")
+    let resultado = validationResult(req)
+    //Verificar que el resultado este vacio
+    if (!resultado.isEmpty()) {
+        return res.render("auth/reset-password", {
+            pagina: "Reestablece tu constraseña",
+            errores: resultado.array(),
+            csrfToken: req.csrfToken(),
+            
+        })
+    }
 
-} 
+    const {token}= req.params
+    const {password}= req.body
+
+    const usuario = await Usuario.findOne({ where: { token } })
+
+
+    //Hashear la password
+
+    const salt = await bcrypt.genSalt(10)
+    usuario.password= await bcrypt.hash(password,salt);
+    usuario.token= null;
+
+    await usuario.save();
+
+    res.render("auth/confirmar-cuenta",{
+        pagina:"Contraseña reestablecida corretamente",
+        mensaje:"La contraseña se guardó correctamente"
+    })
+
+ }
+ 
+ export const autenticar= async(req,res)=>{
+    console.log(req.body)
+    await check('email').isEmail().withMessage("Debes ingresar algun Email válido").run(req)
+    await check('password').notEmpty().withMessage("La contraseña es obligatoria").run(req)
+
+    let resultado = validationResult(req)
+    //Verificar que el resultado este vacio
+    if (!resultado.isEmpty()) {
+        return res.render("auth/login", {
+            pagina: "Iniciar Sesion",
+            errores: resultado.array(),
+            csrfToken: req.csrfToken(),
+            
+        })
+    }
+    const {email, password} = req.body
+
+    const usuario = await Usuario.findOne({where: {email}})
+    if(!usuario){
+        return res.render("auth/login",{
+            pagina:"Iniciar Sesion",
+            csrfToken: req.csrfToken(),
+            errores: [{msg:"El usuario ingresado no existe"}]
+        })
+    }
+    //Verificamos que la cuenta del usuario este verificado
+    if(!usuario.confirmado){
+        return res.render("auth/login",{
+            pagina:"Iniciar Sesion",
+            csrfToken: req.csrfToken(),
+            errores: [{msg:"Tu cuenta no ha sido confirmada"}]
+        })
+    }
+    //Revisamos el password del usuario ingresado
+    if(!usuario.verificarPassword(password)){
+        return res.render("auth/login",{
+            pagina: "Iniciar Sesion",
+            csrfToken: req.csrfToken(),
+            errores:[{msg:"La contraseña que ha ingresado es incorrecta"}]
+        })
+    }
+    const token = generarJwt({id:usuario.id, nombre: usuario.nombre})
+    console.log(token)
+    //Almacenamos el jwt en una cookie
+    return res.cookie("_token",token,{
+        httpOnly:true,//Esta opcion evita los ataques crosside,
+        //secure:true
+
+    }).redirect("/mis-propiedades")
+
+
+ }

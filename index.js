@@ -2,6 +2,7 @@ import express from "express";
 import csrf from "csurf"
 import cookieParser from "cookie-parser";
 import router from "./Routes/Usuario.route.js";
+import propiedadesRoute from "./Routes/Propiedades.route.js";
 import db from "./config/db.js";
 import dotenv from "dotenv"
 dotenv.config({path:".env"})
@@ -29,7 +30,10 @@ app.use(csrf({cookie:true}))
 
 //Carpeta publica
 app.use(express.static("public"))
+
+//Rutas categorizadas
 app.use("/api",router)
+app.use("/",propiedadesRoute)
 
 
 app.listen(port,()=>{
